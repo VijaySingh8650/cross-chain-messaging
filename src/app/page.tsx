@@ -1,103 +1,115 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { ChainKey, CHAINS } from "./utils/chains";
+import { ethers } from "ethers";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [fromChain, setFromChain] = useState<ChainKey>("sepolia");
+  const [toChain, setToChain] = useState<ChainKey>("amoy");
+  const [message, setMessage] = useState<string>("");
+const [txHash, setTxHash] = useState<string | null>(null);
+const [loading, setLoading] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setMessage(value);
+  };
+
+    const handleSend = async () => {
+    try {
+      setLoading(true);
+      setTxHash(null);
+
+      const from = CHAINS[fromChain];
+      const provider = new ethers.JsonRpcProvider(from.rpcUrl);
+
+      const wallet = new ethers.Wallet(
+        process.env.NEXT_PUBLIC_PRIVATE_KEY as string,
+        provider
+      );
+
+      if (!("senderContract" in from)) {
+        throw new Error(`Selected 'from' chain does not have a senderContract`);
+      }
+      const senderContract = new ethers.Contract(
+        from.senderContract,
+      //  SenderABI,
+      "",
+        wallet
+      );
+
+      const tx = await senderContract.sendMessage(
+        CHAINS[toChain].hyperlaneDomain,
+        message
+      );
+
+      setTxHash(tx.hash);
+      await tx.wait();
+    } catch (err) {
+      console.error("Transaction failed:", err);
+      alert("Transaction failed. Check console.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  return (
+    <div className="h-screen w-screen p-4">
+      <div className="flex flex-col justify-center gap-4">
+        <input
+          placeholder="Write a message..."
+          className="border border-violet-500 rounded-lg focus:outline-none px-2 py-1"
+          onChange={handleChange}
+          value={message}
+          name="message"
+        />
+        <div className="my-4">
+          <span>From: </span>
+          <select
+            value={fromChain}
+            onChange={(e) => setFromChain(e.target.value as ChainKey)}
+            className=" bg-violet-500 rounded-lg  text-white p-1"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {Object.entries(CHAINS).map(([key, chain]) => (
+              <option key={key} value={key}>
+                {chain.name}
+              </option>
+            ))}
+          </select>
+
+          <span className="ml-4">To: </span>
+          <select
+            value={toChain}
+            onChange={(e) => setToChain(e.target.value as ChainKey)}
+            className=" bg-violet-500 rounded-lg  text-white p-1"
           >
-            Read our docs
-          </a>
+            {Object.entries(CHAINS).map(([key, chain]) => (
+              <option key={key} value={key}>
+                {chain.name}
+              </option>
+            ))}
+          </select>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <button onClick={handleSend} className="bg-violet-500 px-2 py-1 rounded-lg text-white shadow">
+          {loading ? "Sending..." : "Send"}
+        </button>
+      </div>
+
+      {txHash && (
+          <div className="text-green-600 mt-2">
+            ✅ Sent! Tx hash:{" "}
+            <a
+              href={`https://amoy.polygonscan.com/tx/${txHash}`}
+              target="_blank"
+              className="underline"
+            >
+              {txHash.slice(0, 10)}...
+            </a>
+          </div>
+        )}
+
     </div>
   );
 }
