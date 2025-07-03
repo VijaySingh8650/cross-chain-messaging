@@ -1,0 +1,23 @@
+{
+  "protocol": "router",
+  "chains": {
+    "sepolia": {
+      "rpcUrl": "${NEXT_PUBLIC_SEPOLIA_RPC_URL}",
+      "privateKey": "${NEXT_PUBLIC_PRIVATE_KEY}"
+    },
+    "amoy": {
+      "rpcUrl": "${NEXT_PUBLIC_AMOY_RPC_URL}",
+      "privateKey": "${NEXT_PUBLIC_PRIVATE_KEY}"
+    }
+  },
+  "routers": {
+    "sepolia": {
+      "type": "interchain-router",
+      "mailbox": "default"
+    },
+    "amoy": {
+      "type": "interchain-router",
+      "mailbox": "default"
+    }
+  }
+}
